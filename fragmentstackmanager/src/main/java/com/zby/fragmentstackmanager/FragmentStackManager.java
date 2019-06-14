@@ -234,8 +234,10 @@ public class FragmentStackManager implements Transaction {
             IFSFragment fragment = temp.get(i);
             if (fragment.getClass() != clazz) {
                 popFragment();
-            } else if (bundle != null) {
-                fragment.onNewBundle(bundle);
+            } else {
+                if (bundle != null) {
+                    fragment.onNewBundle(bundle);
+                }
                 return true;
             }
         }
