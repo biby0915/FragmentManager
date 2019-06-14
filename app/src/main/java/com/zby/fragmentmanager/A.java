@@ -10,14 +10,13 @@ import android.view.ViewGroup;
 /**
  * @author ZhuBingYang
  */
-public class C extends AFragment {
-
+public class A extends AFragment {
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
-        tv.setText("C");
+        tv.setText("A");
         return view;
     }
 }

@@ -30,12 +30,6 @@ public class MainActivity extends AppCompatActivity implements FragmentHost {
         manager = new FragmentStackManager(this, R.id.frame);
         manager.UseDefaultAnimation();
 
-        manager.registerBackStackObserver(new OnBackStackChangeListener() {
-            @Override
-            public void onStackChanged(Fragment fragment, StackChangeType type) {
-                System.out.println(fragment + "   " + type);
-            }
-        });
     }
 
     @Override

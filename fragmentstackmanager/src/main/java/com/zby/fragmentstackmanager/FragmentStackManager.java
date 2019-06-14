@@ -76,25 +76,36 @@ public class FragmentStackManager implements Transaction {
         mFragmentManager = mActivity.getSupportFragmentManager();
         mContainerId = containerId;
 
+        for (Fragment fragment : mFragmentManager.getFragments()) {
+            mFragmentStack.add((IFSFragment) fragment);
+        }
+
         mFragmentManager.addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
             @Override
             public void onBackStackChanged() {
 
                 List<Fragment> fragments = mFragmentManager.getFragments();
+
                 if (mFragmentStack.size() < fragments.size()) {
-                    Fragment fragment = fragments.get(fragments.size() - 1);
-                    mFragmentStack.add((IFSFragment) fragment);
-                    for (OnBackStackChangeListener listener : mBackStackObserverList) {
-                        listener.onStackChanged(fragment, StackChangeType.ADD);
+                    List<Fragment> addedFragments = fragments.subList(mFragmentStack.size(), fragments.size());
+                    for (Fragment fragment : addedFragments) {
+                        mFragmentStack.add((IFSFragment) fragment);
+                        for (OnBackStackChangeListener listener : mBackStackObserverList) {
+                            listener.onStackChanged(fragment, StackChangeType.ADD);
+                        }
+                        Log("add Fragment:" + fragment.getClass().getSimpleName());
                     }
-                    Log("add Fragment:" + fragment.getClass().getSimpleName());
                 } else if (mFragmentStack.size() > fragments.size()) {
-                    IFSFragment fragment = mFragmentStack.get(mFragmentStack.size() - 1);
-                    for (OnBackStackChangeListener listener : mBackStackObserverList) {
-                        listener.onStackChanged((Fragment) fragment, StackChangeType.POP);
+                    int count = mFragmentStack.size() - fragments.size();
+
+                    for (int i = 0; i < count; i++) {
+                        IFSFragment fragment = mFragmentStack.get(mFragmentStack.size() - 1);
+                        for (OnBackStackChangeListener listener : mBackStackObserverList) {
+                            listener.onStackChanged((Fragment) fragment, StackChangeType.POP);
+                        }
+                        mFragmentStack.remove(mFragmentStack.size() - 1);
+                        Log("pop Fragment:" + fragment.getClass().getSimpleName());
                     }
-                    mFragmentStack.remove(mFragmentStack.size() - 1);
-                    Log("pop Fragment:" + fragment.getClass().getSimpleName());
                 }
             }
         });
@@ -150,7 +161,7 @@ public class FragmentStackManager implements Transaction {
                 transaction.addSharedElement(element.getView(), element.getName());
             }
             transaction.replace(mContainerId, (Fragment) fragment, fragment.getClass().getSimpleName());
-        }else {
+        } else {
             transaction.add(mContainerId, (Fragment) fragment, fragment.getClass().getSimpleName());
         }
 
@@ -181,12 +192,13 @@ public class FragmentStackManager implements Transaction {
     public boolean popFragment(Bundle bundle) {
         if (mFragmentStack.size() > 1) {
             IFSFragment fragment = mFragmentStack.get(mFragmentStack.size() - 1);
+            mFragmentManager.popBackStack();
             if (fragment.getRequestCode() != IFSFragment.DEFAULT_REQUEST_CODE) {
                 fragment.onFragmentResult(fragment.getRequestCode(), fragment.getResultCode(), bundle);
-            } else {
+            } else if (bundle != null) {
                 fragment.onNewBundle(bundle);
             }
-            mFragmentManager.popBackStack();
+
             return true;
         } else {
             mActivity.finish();
@@ -202,19 +214,32 @@ public class FragmentStackManager implements Transaction {
 
     @Override
     public boolean popToFragment(Class<? extends IFSFragment> clazz, Bundle bundle) {
-        if (findFragment(clazz) != null) {
-            for (int i = mFragmentStack.size() - 1; i >= 0; i--) {
-                IFSFragment fragment = mFragmentStack.get(i);
-                if (fragment.getClass() != clazz) {
-                    popFragment();
-                } else {
-                    fragment.onNewBundle(bundle);
-                    return true;
-                }
+        if (mFragmentStack.size() <= 1) {
+            Log("fragment count is less than 2,can't do 'pop to' operation.");
+            return false;
+        }
+
+        if (mFragmentStack.get(mFragmentStack.size() - 1).getClass() == clazz) {
+            Log("make sure it's not the current fragment.");
+            return false;
+        }
+
+        if (findFragment(clazz) == null) {
+            Log("No corresponding fragment was found.");
+            return false;
+        }
+
+        List<IFSFragment> temp = new ArrayList<>(mFragmentStack);
+        for (int i = temp.size() - 1; i >= 0; i--) {
+            IFSFragment fragment = temp.get(i);
+            if (fragment.getClass() != clazz) {
+                popFragment();
+            } else if (bundle != null) {
+                fragment.onNewBundle(bundle);
+                return true;
             }
         }
 
-        Log("No corresponding fragment was found.");
         return false;
     }
 
@@ -239,11 +264,13 @@ public class FragmentStackManager implements Transaction {
 
     @Override
     public IFSFragment findFragment(Class<? extends IFSFragment> clazz) {
-        for (IFSFragment fragment : mFragmentStack) {
+        for (int i = mFragmentStack.size() - 1; i >= 0; i--) {
+            IFSFragment fragment = mFragmentStack.get(i);
             if (fragment.getClass() == clazz) {
                 return fragment;
             }
         }
+
         return null;
     }
 
