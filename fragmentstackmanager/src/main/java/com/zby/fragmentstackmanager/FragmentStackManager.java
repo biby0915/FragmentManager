@@ -106,6 +106,11 @@ public class FragmentStackManager implements Transaction {
                         mFragmentStack.remove(mFragmentStack.size() - 1);
                         Log("pop Fragment:" + fragment.getClass().getSimpleName());
                     }
+
+                    // call onResume
+                    if (mFragmentStack.size() > 0) {
+                        ((Fragment) mFragmentStack.get(mFragmentStack.size() - 1)).onResume();
+                    }
                 }
             }
         });
@@ -243,6 +248,14 @@ public class FragmentStackManager implements Transaction {
         }
 
         return false;
+    }
+
+    @Override
+    public void newIntent(Class<? extends IFSFragment> clazz, Bundle bundle) {
+        IFSFragment fragment = findFragment(clazz);
+        if (fragment != null) {
+            fragment.onNewBundle(bundle);
+        }
     }
 
     /**

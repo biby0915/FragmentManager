@@ -66,6 +66,13 @@ public interface Transaction {
     boolean popToFragment(Class<? extends IFSFragment> clazz, Bundle bundle);
 
     /**
+     *
+     * @param clazz
+     * @param bundle
+     */
+    void newIntent(Class<? extends IFSFragment> clazz, Bundle bundle);
+
+    /**
      * 根据所给页面类型查找fragment
      * 如果有多个，返回最上层
      *
